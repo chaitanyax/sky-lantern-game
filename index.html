@@ -4,30 +4,33 @@
     <meta charset="UTF-8" />
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1.0"
     />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <title>Sky Lantern Sprint</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
     <main class="app-shell">
       <section class="game-panel">
-        <div class="hud">
-          <div class="hud-card">
-            <span class="hud-label">Score</span>
-            <strong id="score">0</strong>
-          </div>
-          <div class="hud-card">
-            <span class="hud-label">Best</span>
-            <strong id="best">0</strong>
-          </div>
-          <div class="hud-card">
-            <span class="hud-label">Shields</span>
-            <strong id="shields">0</strong>
-          </div>
-        </div>
-
         <div class="canvas-shell">
+          <!-- Floating UI on top -->
+          <div class="hud">
+            <div class="hud-card">
+              <span class="hud-label">Score</span>
+              <strong id="score">0</strong>
+            </div>
+            <div class="hud-card">
+              <span class="hud-label">Best</span>
+              <strong id="best">0</strong>
+            </div>
+            <div class="hud-card">
+              <span class="hud-label">Shields</span>
+              <strong id="shields">0</strong>
+            </div>
+          </div>
+
           <canvas id="game" aria-label="Sky Lantern Sprint game area"></canvas>
 
           <div class="overlay overlay-visible" id="startOverlay">
