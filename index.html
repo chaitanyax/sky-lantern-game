@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+    />
+    <title>Sky Lantern Sprint</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="game-panel">
+        <div class="hud">
+          <div class="hud-card">
+            <span class="hud-label">Score</span>
+            <strong id="score">0</strong>
+          </div>
+          <div class="hud-card">
+            <span class="hud-label">Best</span>
+            <strong id="best">0</strong>
+          </div>
+          <div class="hud-card">
+            <span class="hud-label">Shields</span>
+            <strong id="shields">0</strong>
+          </div>
+        </div>
+
+        <div class="canvas-shell">
+          <canvas id="game" aria-label="Sky Lantern Sprint game area"></canvas>
+
+          <div class="overlay overlay-visible" id="startOverlay">
+            <div class="panel-copy">
+              <p class="eyebrow">Tap to lift</p>
+              <h1>Sky Lantern Sprint</h1>
+              <p>
+                Guide a tiny lantern spirit through storm reeds, collect sparks,
+                and earn shield bursts. Works with tap, click, or spacebar.
+              </p>
+              <button id="startButton" class="primary-button">Start Flight</button>
+            </div>
+          </div>
+
+          <div class="overlay" id="gameOverOverlay">
+            <div class="panel-copy">
+              <p class="eyebrow">Run ended</p>
+              <h2>Storm caught the lantern.</h2>
+              <p id="summary">You banked 0 sparks.</p>
+              <button id="restartButton" class="primary-button">Fly Again</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="info-panel">
+        <p class="eyebrow">Hybrid-ready</p>
+        <h2>Designed for browser, iOS, and Android webviews</h2>
+        <p>
+          The game is plain HTML, CSS, and JavaScript. Drop the `game/` folder
+          into a Capacitor or Cordova app shell and it will behave the same as it
+          does in the browser.
+        </p>
+        <ul>
+          <li>Tap anywhere to hop upward.</li>
+          <li>Collect sparks to fill your shield meter.</li>
+          <li>Each 4 sparks earns one collision shield.</li>
+          <li>Avoid storm reeds and the canyon floor.</li>
+        </ul>
+      </aside>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
