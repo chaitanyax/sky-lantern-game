@@ -29,6 +29,10 @@
               <span class="hud-label">Shields</span>
               <strong id="shields">0</strong>
             </div>
+            <div class="hud-card">
+              <span class="hud-label">Sparks</span>
+              <strong id="sparks">0</strong>
+            </div>
           </div>
 
           <canvas id="game" aria-label="Sky Lantern Sprint game area"></canvas>
@@ -41,7 +45,10 @@
                 Guide a tiny lantern spirit through storm reeds, collect sparks,
                 and earn shield bursts. Works with tap, click, or spacebar.
               </p>
-              <button id="startButton" class="primary-button">Start Flight</button>
+              <div class="action-buttons">
+                <button id="startButton" class="primary-button">Start Flight</button>
+                <button class="secondary-button sound-toggle" type="button">Sound: <span class="sound-state">ON</span></button>
+              </div>
             </div>
           </div>
 
@@ -50,27 +57,16 @@
               <p class="eyebrow">Run ended</p>
               <h2>Storm caught the lantern.</h2>
               <p id="summary">You banked 0 sparks.</p>
-              <button id="restartButton" class="primary-button">Fly Again</button>
+              <div class="action-buttons">
+                <button id="restartButton" class="primary-button">Fly Again</button>
+                <button class="secondary-button sound-toggle" type="button">Sound: <span class="sound-state">ON</span></button>
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <aside class="info-panel">
-        <p class="eyebrow">Hybrid-ready</p>
-        <h2>Designed for browser, iOS, and Android webviews</h2>
-        <p>
-          The game is plain HTML, CSS, and JavaScript. Drop the `game/` folder
-          into a Capacitor or Cordova app shell and it will behave the same as it
-          does in the browser.
-        </p>
-        <ul>
-          <li>Tap anywhere to hop upward.</li>
-          <li>Collect sparks to fill your shield meter.</li>
-          <li>Each 4 sparks earns one collision shield.</li>
-          <li>Avoid storm reeds and the canyon floor.</li>
-        </ul>
-      </aside>
+
     </main>
 
     <script src="./app.js"></script>

@@ -4,11 +4,105 @@
   const scoreEl = document.getElementById("score");
   const bestEl = document.getElementById("best");
   const shieldsEl = document.getElementById("shields");
+  const sparksEl = document.getElementById("sparks");
   const startOverlay = document.getElementById("startOverlay");
   const gameOverOverlay = document.getElementById("gameOverOverlay");
   const startButton = document.getElementById("startButton");
   const restartButton = document.getElementById("restartButton");
   const summaryEl = document.getElementById("summary");
+  const soundBtns = document.querySelectorAll(".sound-toggle");
+  const soundStates = document.querySelectorAll(".sound-state");
+  let soundEnabled = true;
+
+  soundBtns.forEach(btn => {
+    btn.addEventListener("click", () => {
+      soundEnabled = !soundEnabled;
+      soundStates.forEach(state => {
+        state.textContent = soundEnabled ? "ON" : "OFF";
+      });
+    });
+  });
+
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  let audioCtx;
+
+  function initAudio() {
+    if (!audioCtx && AudioContextClass) {
+      audioCtx = new AudioContextClass();
+    }
+    if (audioCtx && audioCtx.state === "suspended") {
+      audioCtx.resume();
+    }
+  }
+
+  function playSound(type) {
+    if (!audioCtx || !soundEnabled) return;
+    const t = audioCtx.currentTime;
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    switch (type) {
+      case "flap":
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(300, t);
+        osc.frequency.exponentialRampToValueAtTime(500, t + 0.1);
+        gain.gain.setValueAtTime(0.1, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+        osc.start(t);
+        osc.stop(t + 0.1);
+        break;
+      case "spark":
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(800, t);
+        osc.frequency.exponentialRampToValueAtTime(1200, t + 0.1);
+        gain.gain.setValueAtTime(0.1, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+        osc.start(t);
+        osc.stop(t + 0.1);
+        break;
+      case "shield":
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(400, t);
+        osc.frequency.exponentialRampToValueAtTime(800, t + 0.2);
+        osc.frequency.exponentialRampToValueAtTime(1200, t + 0.4);
+        gain.gain.setValueAtTime(0.1, t);
+        gain.gain.linearRampToValueAtTime(0.1, t + 0.2);
+        gain.gain.linearRampToValueAtTime(0.01, t + 0.4);
+        osc.start(t);
+        osc.stop(t + 0.4);
+        break;
+      case "hit":
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(200, t);
+        osc.frequency.exponentialRampToValueAtTime(80, t + 0.15);
+        gain.gain.setValueAtTime(0.3, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+        osc.start(t);
+        osc.stop(t + 0.15);
+        break;
+      case "gameover":
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(150, t);
+        osc.frequency.exponentialRampToValueAtTime(30, t + 0.4);
+        gain.gain.setValueAtTime(0.3, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+        osc.start(t);
+        osc.stop(t + 0.4);
+        break;
+    }
+  }
+
+  function triggerVibrate(pattern) {
+    if (navigator.vibrate && soundEnabled) {
+      try {
+        navigator.vibrate(pattern);
+      } catch (e) {
+        // Ignore vibration errors
+      }
+    }
+  }
 
   const STORAGE_KEY = "sky-lantern-sprint-best";
   let bestScore = Number.parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10) || 0;
@@ -72,6 +166,7 @@
   }
 
   function resetGame() {
+    initAudio();
     state = "running";
     lastTime = 0;
     spawnTimer = 0;
@@ -88,6 +183,7 @@
     sparks.length = 0;
     scoreEl.textContent = "0";
     shieldsEl.textContent = "0";
+    sparksEl.textContent = "0";
     startOverlay.classList.remove("overlay-visible");
     gameOverOverlay.classList.remove("overlay-visible");
   }
@@ -110,6 +206,7 @@
   }
 
   function flap() {
+    initAudio();
     if (state === "idle") {
       resetGame();
     }
@@ -117,6 +214,8 @@
       resetGame();
     }
     player.velocityY = player.flapForce * scale;
+    playSound("flap");
+    triggerVibrate(15);
   }
 
   function spawnReed() {
@@ -217,9 +316,15 @@
         sparksCollected += 1;
         if (sparksCollected % 4 === 0) {
           shields += 1;
-          shieldsEl.textContent = String(shields);
           player.shieldGlow = 1;
+          playSound("shield");
+          triggerVibrate([20, 50, 30]);
+        } else {
+          playSound("spark");
+          triggerVibrate(15);
         }
+        shieldsEl.textContent = String(shields);
+        sparksEl.textContent = String(sparksCollected);
         updateScore();
       }
     }
@@ -228,6 +333,7 @@
       handleCollision();
     }
 
+    updateScore();
     draw();
   }
 
@@ -242,9 +348,13 @@
       flashTimer = 0.7;
       player.velocityY = player.flapForce * 0.45 * scale;
       player.shieldGlow = 1.25;
+      playSound("hit");
+      triggerVibrate([40, 40, 40]);
       return;
     }
 
+    playSound("gameover");
+    triggerVibrate([100, 50, 200]);
     endGame();
   }
 
@@ -258,7 +368,9 @@
 
   function updateScore() {
     const totalScore = Math.floor(distanceScore) + sparksCollected * 3;
-    scoreEl.textContent = String(totalScore);
+    if (scoreEl.textContent !== String(totalScore)) {
+      scoreEl.textContent = String(totalScore);
+    }
   }
 
   function drawBackground() {
@@ -329,8 +441,9 @@
     ctx.translate(player.x, player.y);
     ctx.rotate(Math.max(-0.45, Math.min(0.65, player.velocityY / 500)));
 
-    if (player.shieldGlow > 0) {
-      ctx.strokeStyle = "rgba(173, 232, 244," + Math.min(0.85, player.shieldGlow).toFixed(2) + ")";
+    const activeShieldAlpha = Math.max(shields > 0 ? 0.6 : 0, Math.min(0.85, player.shieldGlow));
+    if (activeShieldAlpha > 0) {
+      ctx.strokeStyle = "rgba(173, 232, 244," + activeShieldAlpha.toFixed(2) + ")";
       ctx.lineWidth = 5;
       ctx.beginPath();
       ctx.arc(0, 0, player.radius * 1.5, 0, Math.PI * 2);
