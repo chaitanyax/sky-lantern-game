@@ -37,7 +37,8 @@
 
   function playSound(type) {
     if (!audioCtx || !soundEnabled) return;
-    const t = audioCtx.currentTime;
+    // Add a tiny 20ms scheduling buffer to prevent Safari from dropping events scheduled "in the past"
+    const t = audioCtx.currentTime + 0.02;
     const osc = audioCtx.createOscillator();
     const gain = audioCtx.createGain();
     osc.connect(gain);
