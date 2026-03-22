@@ -118,6 +118,7 @@
   let sparksCollected = 0;
   let scrollSpeed = 260;
   let flashTimer = 0;
+  let currentLevel = 1;
 
   const player = {
     x: 0,
@@ -132,6 +133,7 @@
   const reeds = [];
   const sparks = [];
   const clouds = [];
+  const stars = [];
 
   bestEl.textContent = String(bestScore);
 
@@ -155,12 +157,21 @@
 
   function rebuildClouds() {
     clouds.length = 0;
+    stars.length = 0;
     for (let i = 0; i < 7; i += 1) {
       clouds.push({
         x: (width / 7) * i,
-        y: height * (0.18 + Math.random() * 0.5),
+        y: height * (0.18 + Math.random() * 0.4),
         speed: 14 + Math.random() * 22,
         size: 24 + Math.random() * 42,
+      });
+    }
+    for (let i = 0; i < 80; i += 1) {
+      stars.push({
+        x: Math.random() * width,
+        y: Math.random() * height * 0.85,
+        size: Math.random() * 1.5 + 0.5,
+        twinkle: Math.random() * Math.PI * 2
       });
     }
   }
@@ -176,6 +187,7 @@
     sparksCollected = 0;
     flashTimer = 0;
     scrollSpeed = 260;
+    currentLevel = 1;
     player.y = height * 0.5;
     player.velocityY = 0;
     player.shieldGlow = 0;
@@ -219,7 +231,11 @@
   }
 
   function spawnReed() {
-    const gap = Math.max(150, Math.min(210, height * 0.3));
+    let minGap = 150;
+    let maxGap = 210;
+    if (currentLevel === 2) { minGap = 130; maxGap = 180; }
+    if (currentLevel === 3) { minGap = 110; maxGap = 150; }
+    const gap = Math.max(minGap, Math.min(maxGap, height * (0.32 - currentLevel * 0.02)));
     const topHeight = 90 + Math.random() * (height - gap - 220);
     reeds.push({
       x: width + 60,
@@ -371,49 +387,162 @@
     if (scoreEl.textContent !== String(totalScore)) {
       scoreEl.textContent = String(totalScore);
     }
+    
+    let newLevel = 1;
+    if (totalScore >= 300) newLevel = 2;
+    if (totalScore >= 600) newLevel = 3;
+    
+    if (newLevel > currentLevel) {
+      currentLevel = newLevel;
+      scrollSpeed += 30; // speed bump!
+    }
   }
 
   function drawBackground() {
     const sky = ctx.createLinearGradient(0, 0, 0, height);
-    sky.addColorStop(0, "#09253f");
-    sky.addColorStop(0.52, "#1f6f8b");
-    sky.addColorStop(1, "#f6bd60");
+    if (currentLevel === 1) {
+      sky.addColorStop(0, "#010e28");
+      sky.addColorStop(0.35, "#0b2046");
+      sky.addColorStop(0.7, "#281b40");
+      sky.addColorStop(1, "#0d0914");
+    } else if (currentLevel === 2) {
+      sky.addColorStop(0, "#2a1738");
+      sky.addColorStop(0.35, "#5c3a58");
+      sky.addColorStop(0.7, "#d9786c");
+      sky.addColorStop(1, "#ffb37b");
+    } else {
+      sky.addColorStop(0, "#441416");
+      sky.addColorStop(0.35, "#a83832");
+      sky.addColorStop(0.7, "#df6b30");
+      sky.addColorStop(1, "#f8b850");
+    }
     ctx.fillStyle = sky;
     ctx.fillRect(0, 0, width, height);
 
-    ctx.fillStyle = "rgba(255,255,255,0.08)";
+    if (currentLevel === 1) {
+      ctx.fillStyle = "#ffffff";
+      for (const star of stars) {
+        const twnk = 0.5 + Math.sin(performance.now() * 0.003 + star.twinkle) * 0.5;
+        ctx.globalAlpha = twnk * 0.8;
+        ctx.beginPath();
+        ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1.0;
+    }
+
+    const moonX = width * 0.8;
+    const moonY = height * 0.2;
+    const moonRadius = Math.max(30, height * 0.08);
+    
+    const mglow = ctx.createRadialGradient(moonX, moonY, moonRadius * 0.8, moonX, moonY, moonRadius * 4);
+    if (currentLevel === 1) {
+      mglow.addColorStop(0, "rgba(255, 252, 230, 0.45)");
+      mglow.addColorStop(1, "rgba(255, 252, 230, 0)");
+      ctx.fillStyle = mglow;
+      ctx.beginPath();
+      ctx.arc(moonX, moonY, moonRadius * 4, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.fillStyle = "#fffae6";
+      ctx.beginPath();
+      ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2);
+      ctx.fill();
+      
+      ctx.fillStyle = "rgba(0, 0, 0, 0.08)";
+      ctx.beginPath();
+      ctx.arc(moonX - moonRadius*0.3, moonY - moonRadius*0.2, moonRadius*0.2, 0, Math.PI*2);
+      ctx.arc(moonX + moonRadius*0.4, moonY + moonRadius*0.1, moonRadius*0.3, 0, Math.PI*2);
+      ctx.arc(moonX - moonRadius*0.1, moonY + moonRadius*0.4, moonRadius*0.15, 0, Math.PI*2);
+      ctx.fill();
+    } else {
+      const sunAlpha = currentLevel === 2 ? "0.5" : "0.6";
+      mglow.addColorStop(0, `rgba(255, 220, 100, ${sunAlpha})`);
+      mglow.addColorStop(1, "rgba(255, 220, 100, 0)");
+      ctx.fillStyle = mglow;
+      ctx.beginPath();
+      ctx.arc(moonX, moonY, moonRadius * 5, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.fillStyle = currentLevel === 2 ? "#ffefb3" : "#ffe066";
+      ctx.beginPath();
+      ctx.arc(moonX, moonY, moonRadius, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.fillStyle = currentLevel === 1 ? "rgba(255, 255, 255, 0.05)" : (currentLevel === 2 ? "rgba(255, 200, 200, 0.15)" : "rgba(255, 150, 100, 0.1)");
     for (const cloud of clouds) {
       ctx.beginPath();
       ctx.ellipse(cloud.x, cloud.y, cloud.size * 1.5, cloud.size, 0, 0, Math.PI * 2);
       ctx.fill();
     }
 
-    ctx.fillStyle = "rgba(16, 58, 77, 0.22)";
+    ctx.fillStyle = currentLevel === 1 ? "rgba(10, 15, 30, 0.6)" : (currentLevel === 2 ? "rgba(40, 20, 35, 0.6)" : "rgba(60, 15, 15, 0.7)");
     for (let i = 0; i < 4; i += 1) {
       const ridgeWidth = width / 3;
-      const x = i * ridgeWidth - (performance.now() * 0.01 * (i + 1)) % ridgeWidth;
+      const x = i * ridgeWidth - (performance.now() * 0.005 * (i + 1)) % ridgeWidth;
       ctx.beginPath();
       ctx.moveTo(x, height);
-      ctx.quadraticCurveTo(x + ridgeWidth * 0.5, height * 0.58, x + ridgeWidth, height);
+      ctx.quadraticCurveTo(x + ridgeWidth * 0.5, height * 0.6, x + ridgeWidth, height);
       ctx.closePath();
       ctx.fill();
     }
   }
 
   function drawReeds() {
-    for (const reed of reeds) {
-      const bend = Math.sin(reed.sway) * 8 * scale;
-      const gradient = ctx.createLinearGradient(reed.x, 0, reed.x + reed.width, 0);
-      gradient.addColorStop(0, "#1f5138");
-      gradient.addColorStop(1, "#2d6a4f");
-      ctx.fillStyle = gradient;
+    for (const obs of reeds) {
+      const bend = Math.sin(obs.sway) * 8 * scale;
+      const tX = obs.x + obs.width / 2;
+      
+      const trunkColor = currentLevel === 1 ? "#070d14" : (currentLevel === 2 ? "#170b15" : "#1a0505");
+      const leafColor = currentLevel === 1 ? "#0c1824" : (currentLevel === 2 ? "#281926" : "#2a1010");
+      const canopyColor = currentLevel === 1 ? "#05090f" : (currentLevel === 2 ? "#120710" : "#140404");
+      const birdColor = currentLevel === 1 ? "#03060a" : (currentLevel === 2 ? "#0a0308" : "#0a0202");
 
-      ctx.fillRect(reed.x, 0, reed.width, reed.gapTop);
-      ctx.fillRect(reed.x + bend, reed.gapBottom, reed.width, height - reed.gapBottom);
+      const trunkWidth = obs.width * 0.3;
+      ctx.fillStyle = trunkColor;
+      ctx.fillRect(tX - trunkWidth/2, obs.gapBottom, trunkWidth, height - obs.gapBottom);
+      
+      ctx.fillStyle = leafColor;
+      const tiers = 4;
+      const tierHeight = Math.max(80, (height - obs.gapBottom) * 0.6); 
+      for(let j=0; j<tiers; j++) {
+        const topY = obs.gapBottom + j * (tierHeight / tiers);
+        const botY = topY + tierHeight * 0.6;
+        const w = obs.width * (1.2 + j * 0.4);
+        
+        ctx.beginPath();
+        ctx.moveTo(tX + bend * (1 - j/tiers), topY);
+        ctx.lineTo(tX - w/2, botY);
+        ctx.lineTo(tX + w/2, botY);
+        ctx.closePath();
+        ctx.fill();
+      }
 
-      ctx.fillStyle = "rgba(255, 255, 255, 0.08)";
-      ctx.fillRect(reed.x + reed.width * 0.2, 0, reed.width * 0.12, reed.gapTop);
-      ctx.fillRect(reed.x + bend + reed.width * 0.2, reed.gapBottom, reed.width * 0.12, height - reed.gapBottom);
+      ctx.fillStyle = canopyColor;
+      ctx.beginPath();
+      ctx.moveTo(obs.x - 30, 0);
+      ctx.lineTo(obs.x + obs.width + 30, 0);
+      ctx.lineTo(obs.x + obs.width + 10, obs.gapTop * 0.5);
+      ctx.lineTo(tX + bend, obs.gapTop);
+      ctx.lineTo(obs.x - 10, obs.gapTop * 0.6);
+      ctx.closePath();
+      ctx.fill();
+      
+      ctx.fillStyle = birdColor;
+      for (let b = 0; b < 2; b++) {
+        const bx = obs.x - 10 + b * (obs.width + 20);
+        const by = obs.gapTop - 25 - b * 15;
+        const bscale = 0.6 * scale;
+        
+        ctx.beginPath();
+        ctx.moveTo(bx, by);
+        ctx.quadraticCurveTo(bx - 12*bscale, by - 8*bscale, bx - 24*bscale, by - 4*bscale);
+        ctx.quadraticCurveTo(bx - 12*bscale, by - 2*bscale, bx, by + 6*bscale);
+        ctx.quadraticCurveTo(bx + 12*bscale, by - 2*bscale, bx + 24*bscale, by - 4*bscale);
+        ctx.quadraticCurveTo(bx + 12*bscale, by - 8*bscale, bx, by);
+        ctx.fill();
+      }
     }
   }
 
