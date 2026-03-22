@@ -31,6 +31,7 @@ body {
 
 .app-shell {
   width: 100vw;
+  height: 100vh;
   height: 100svh;
   display: flex;
   flex-direction: column;
@@ -51,7 +52,9 @@ body {
 /* Canvas & Floating HUD layout */
 .canvas-shell {
   position: relative;
+  min-height: 100vh;
   min-height: 100svh;
+  height: 100vh;
   height: 100svh;
   width: 100vw;
   border-radius: 0;
@@ -62,6 +65,7 @@ body {
 canvas {
   display: block;
   width: 100vw;
+  height: 100vh;
   height: 100svh;
   min-height: auto;
   touch-action: manipulation;
