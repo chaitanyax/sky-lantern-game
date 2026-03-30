@@ -135,6 +135,7 @@
   const sparks = [];
   const clouds = [];
   const stars = [];
+  const playerEmbers = [];
 
   bestEl.textContent = String(bestScore);
 
@@ -194,6 +195,7 @@
     player.shieldGlow = 0;
     reeds.length = 0;
     sparks.length = 0;
+    playerEmbers.length = 0;
     scoreEl.textContent = "0";
     shieldsEl.textContent = "0";
     sparksEl.textContent = "0";
@@ -268,7 +270,7 @@
     }
 
     flashTimer = Math.max(0, flashTimer - dt);
-    scrollSpeed += dt * 1.4;
+    scrollSpeed += dt * 0.2;
     spawnTimer += dt;
     sparkTimer += dt;
     distanceScore += dt * 1.85;
@@ -286,6 +288,29 @@
     player.velocityY += player.gravity * dt * scale;
     player.y += player.velocityY * dt;
     player.shieldGlow = Math.max(0, player.shieldGlow - dt * 2.4);
+
+    if (Math.random() < dt * 15 + (player.velocityY < 0 ? dt * 25 : 0)) {
+      playerEmbers.push({
+        x: player.x,
+        y: player.y + player.radius * 1.2,
+        vx: (Math.random() - 0.5) * 30,
+        vy: Math.random() * 20 + 10,
+        life: 1.0,
+        maxLife: 0.5 + Math.random() * 0.6,
+        size: (Math.random() * 2.5 + 1) * scale
+      });
+    }
+
+    for (let i = playerEmbers.length - 1; i >= 0; i -= 1) {
+      const e = playerEmbers[i];
+      e.life -= dt / e.maxLife;
+      e.x -= scrollSpeed * dt * 0.7; // embers trail behind
+      e.x += e.vx * dt;
+      e.y += e.vy * dt;
+      if (e.life <= 0) {
+        playerEmbers.splice(i, 1);
+      }
+    }
 
     for (const cloud of clouds) {
       cloud.x -= cloud.speed * dt;
@@ -390,12 +415,12 @@
     }
     
     let newLevel = 1;
-    if (totalScore >= 300) newLevel = 2;
-    if (totalScore >= 600) newLevel = 3;
+    if (totalScore >= 3000) newLevel = 2;
+    if (totalScore >= 6000) newLevel = 3;
     
     if (newLevel > currentLevel) {
       currentLevel = newLevel;
-      scrollSpeed += 30; // speed bump!
+      scrollSpeed += 15; // speed bump!
     }
   }
 
@@ -567,6 +592,15 @@
   }
 
   function drawPlayer() {
+    // Draw trailing embers behind the player
+    for (const e of playerEmbers) {
+      const alpha = Math.max(0, e.life);
+      ctx.fillStyle = `rgba(255, ${150 + Math.random() * 100}, 50, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(e.x, e.y, e.size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
     ctx.save();
     ctx.translate(player.x, player.y);
     ctx.rotate(Math.max(-0.45, Math.min(0.65, player.velocityY / 500)));
@@ -580,41 +614,78 @@
       ctx.stroke();
     }
 
-    const halo = ctx.createRadialGradient(0, 0, player.radius * 0.35, 0, 0, player.radius * 2.8);
-    halo.addColorStop(0, "rgba(255, 234, 167, 0.95)");
-    halo.addColorStop(0.4, "rgba(255, 183, 3, 0.42)");
-    halo.addColorStop(1, "rgba(255, 183, 3, 0)");
+    const time = performance.now() / 1000;
+    const flicker = Math.sin(time * 15) * 0.1 + Math.sin(time * 35) * 0.05 + 0.85; 
+    
+    const wobbleY = Math.sin(time * 8) * player.radius * 0.05;
+    const wobbleX = Math.cos(time * 6) * player.radius * 0.05;
+
+    const halo = ctx.createRadialGradient(0, player.radius * 0.5, player.radius * 0.2, 0, 0, player.radius * 3.5);
+    halo.addColorStop(0, `rgba(255, 230, 150, ${0.9 * flicker})`);
+    halo.addColorStop(0.4, `rgba(255, 140, 0, ${0.4 * flicker})`);
+    halo.addColorStop(1, "rgba(255, 60, 0, 0)");
     ctx.fillStyle = halo;
     ctx.beginPath();
-    ctx.arc(0, 0, player.radius * 2.8, 0, Math.PI * 2);
+    ctx.arc(0, 0, player.radius * 3.5, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = "#ffcf56";
-    drawRoundedRect(-player.radius, -player.radius * 1.1, player.radius * 2, player.radius * 2.2, 8);
-    ctx.fill();
+    const topRadius = player.radius * 1.3;
+    const bottomRadius = player.radius * 0.6;
+    const lanternHeight = player.radius * 2.6;
+    const bottomY = lanternHeight * 0.5;
+    const topY = -lanternHeight * 0.5;
 
-    ctx.fillStyle = "#fb8500";
-    ctx.fillRect(-player.radius * 0.72, -player.radius * 1.34, player.radius * 1.44, player.radius * 0.38);
-
-    ctx.strokeStyle = "#7c2d12";
-    ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(-player.radius * 0.62, -player.radius * 0.42);
-    ctx.lineTo(-player.radius * 0.62, player.radius * 0.72);
-    ctx.moveTo(player.radius * 0.62, -player.radius * 0.42);
-    ctx.lineTo(player.radius * 0.62, player.radius * 0.72);
+    ctx.moveTo(-bottomRadius, bottomY);
+    ctx.bezierCurveTo(
+      -topRadius * 1.5 - wobbleX, bottomY * 0.2, 
+      -topRadius * 1.2, topY, 
+      0, topY + wobbleY
+    );
+    ctx.bezierCurveTo(
+      topRadius * 1.2, topY, 
+      topRadius * 1.5 + wobbleX, bottomY * 0.2, 
+      bottomRadius, bottomY
+    );
+    ctx.quadraticCurveTo(0, bottomY + player.radius * 0.2, -bottomRadius, bottomY);
+    ctx.closePath();
+
+    const lanternBodyGrad = ctx.createLinearGradient(0, bottomY, 0, topY);
+    lanternBodyGrad.addColorStop(0, "#ffe8a1"); 
+    lanternBodyGrad.addColorStop(0.2, "#ffad33"); 
+    lanternBodyGrad.addColorStop(0.6, "#e64d00"); 
+    lanternBodyGrad.addColorStop(1, "#b32400"); 
+    
+    ctx.fillStyle = lanternBodyGrad;
+    ctx.fill();
+
+    ctx.strokeStyle = "rgba(0, 0, 0, 0.15)";
+    ctx.lineWidth = 1;
+    
+    ctx.beginPath();
+    ctx.moveTo(0, bottomY + player.radius * 0.1);
+    ctx.quadraticCurveTo(wobbleX, 0, 0, topY + wobbleY);
     ctx.stroke();
 
-    ctx.fillStyle = "#fffdf6";
     ctx.beginPath();
-    ctx.arc(-player.radius * 0.28, -player.radius * 0.12, player.radius * 0.14, 0, Math.PI * 2);
-    ctx.arc(player.radius * 0.28, -player.radius * 0.12, player.radius * 0.14, 0, Math.PI * 2);
+    ctx.moveTo(-bottomRadius * 0.6, bottomY + player.radius * 0.05);
+    ctx.quadraticCurveTo(-topRadius * 0.9, bottomY * 0.2, -topRadius * 0.5, topY * 0.8);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(bottomRadius * 0.6, bottomY + player.radius * 0.05);
+    ctx.quadraticCurveTo(topRadius * 0.9, bottomY * 0.2, topRadius * 0.5, topY * 0.8);
+    ctx.stroke();
+
+    ctx.fillStyle = "#3a1c00";
+    ctx.beginPath();
+    ctx.ellipse(0, bottomY, bottomRadius, player.radius * 0.15, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    ctx.fillStyle = "#112031";
+    const flameFlickerScale = 0.8 + 0.4 * Math.random(); 
+    ctx.fillStyle = "rgba(255, 255, 200, 0.9)";
     ctx.beginPath();
-    ctx.arc(-player.radius * 0.28, -player.radius * 0.12, player.radius * 0.07, 0, Math.PI * 2);
-    ctx.arc(player.radius * 0.28, -player.radius * 0.12, player.radius * 0.07, 0, Math.PI * 2);
+    ctx.ellipse(0, bottomY, bottomRadius * 0.6 * flameFlickerScale, player.radius * 0.08 * flameFlickerScale, 0, 0, Math.PI * 2);
     ctx.fill();
 
     ctx.restore();
